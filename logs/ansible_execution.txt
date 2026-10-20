@@ -1,0 +1,42 @@
+
+PLAY [Install Velociraptor Linux agent] ****************************************
+
+TASK [Check installed binary] **************************************************
+ok: [localhost]
+
+TASK [Check installed configuration] *******************************************
+ok: [localhost]
+
+TASK [Check existing service] **************************************************
+ok: [localhost]
+
+TASK [Check installation binary source] ****************************************
+ok: [localhost]
+
+TASK [Check installation config source] ****************************************
+ok: [localhost]
+
+TASK [Verify installation files] ***********************************************
+ok: [localhost] => {
+    "changed": false,
+    "msg": "All assertions passed"
+}
+
+TASK [Install binary when missing] *********************************************
+skipping: [localhost]
+
+TASK [Ensure configuration directory exists] ***********************************
+skipping: [localhost]
+
+TASK [Install configuration when missing] **************************************
+skipping: [localhost]
+
+TASK [Create systemd service when missing] *************************************
+skipping: [localhost]
+
+TASK [Ensure agent service is running] *****************************************
+ok: [localhost]
+
+PLAY RECAP *********************************************************************
+localhost                  : ok=7    changed=0    unreachable=0    failed=0    skipped=4    rescued=0    ignored=0   
+
