@@ -1,0 +1,101 @@
+---
+- name: Install Velociraptor Linux agent
+  hosts: localhost
+  connection: local
+  become: true
+  gather_facts: false
+
+  vars:
+    velo_bin: /usr/local/bin/velociraptor_client
+    velo_cfg: /etc/velociraptor/client.config.yaml
+    velo_unit: /etc/systemd/system/velociraptor_client.service
+
+  tasks:
+    - name: Check installed binary
+      ansible.builtin.stat:
+        path: "{{ velo_bin }}"
+      register: binary_check
+
+    - name: Check installed configuration
+      ansible.builtin.stat:
+        path: "{{ velo_cfg }}"
+      register: config_check
+
+    - name: Check existing service
+      ansible.builtin.stat:
+        path: "{{ velo_unit }}"
+      register: unit_check
+
+    - name: Check installation binary source
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/files/velociraptor_client"
+      register: source_binary
+
+    - name: Check installation config source
+      ansible.builtin.stat:
+        path: "{{ playbook_dir }}/files/client.config.yaml"
+      register: source_config
+
+    - name: Verify installation files
+      ansible.builtin.assert:
+        that:
+          - binary_check.stat.exists or source_binary.stat.exists
+          - config_check.stat.exists or source_config.stat.exists
+        fail_msg: "Installation files are missing."
+
+    - name: Install binary when missing
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/files/velociraptor_client"
+        dest: "{{ velo_bin }}"
+        owner: root
+        group: root
+        mode: "0755"
+      when: not binary_check.stat.exists
+
+    - name: Ensure configuration directory exists
+      ansible.builtin.file:
+        path: /etc/velociraptor
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      when: not config_check.stat.exists
+
+    - name: Install configuration when missing
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/files/client.config.yaml"
+        dest: "{{ velo_cfg }}"
+        owner: root
+        group: root
+        mode: "0600"
+      when: not config_check.stat.exists
+      no_log: true
+
+    - name: Create systemd service when missing
+      ansible.builtin.copy:
+        dest: "{{ velo_unit }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Velociraptor client
+          After=network.target
+
+          [Service]
+          Type=simple
+          Restart=always
+          RestartSec=120
+          LimitNOFILE=20000
+          ExecStart=/usr/local/bin/velociraptor_client --config /etc/velociraptor/client.config.yaml client --quiet
+
+          [Install]
+          WantedBy=multi-user.target
+      when: not unit_check.stat.exists
+
+    - name: Ensure agent service is running
+      ansible.builtin.systemd_service:
+        name: velociraptor_client.service
+        daemon_reload: "{{ not unit_check.stat.exists }}"
+        enabled: true
+        state: started

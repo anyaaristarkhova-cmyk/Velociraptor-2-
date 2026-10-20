@@ -1,0 +1,8 @@
+[
+  {
+    "ValueName": "Lab1_Persistence_Test2",
+    "RegistryKey": "Windows/CurrentVersion/Run",
+    "Executable": "notepad.exe",
+    "Diff": "added"
+  }
+]

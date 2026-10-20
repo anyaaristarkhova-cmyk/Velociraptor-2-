@@ -1,0 +1,32 @@
+name: Custom.Windows.PersistenceDelta
+description: Monitor changes in Windows autorun registry values
+type: CLIENT_EVENT
+
+precondition:
+  SELECT * FROM info() WHERE OS =~ "windows"
+
+sources:
+  - query: |
+      LET Autoruns = SELECT
+          OSPath.String AS RegistryPath,
+          Name AS ValueName,
+          Data.value AS Command,
+          OSPath.String + "|" + Data.value AS Identity
+      FROM glob(
+          globs="HKEY_USERS/*/Software/Microsoft/Windows/CurrentVersion/{Run,RunOnce}/*",
+          accessor="registry"
+      )
+      WHERE NOT IsDir
+
+      SELECT
+          RegistryPath,
+          ValueName,
+          Command,
+          Diff,
+          timestamp(epoch=now()) AS DetectedAt
+      FROM diff(
+          query=Autoruns,
+          period=10,
+          key="Identity"
+      )
+      WHERE Diff = "added"
